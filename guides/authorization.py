@@ -16,6 +16,13 @@ OAuth 2.0 really needs to do three things.
 1) Make a request for the OAuth Dialog form with client secret and redirect_url
 2) After client interaction redirect_url is called with auth code or error
 3) Finally auth code is exchanged for a long lived access token
+
+To run simply
+
+cd ROOT_OF_PACKAGE
+pip install -r requirements.txt
+python ./guides/authorization.py CLIENT_ID, CLIENT_SECRET, REDIRECT_URL, API_KEY
+
 '''
 
 SM_API_BASE = "https://api.surveymonkey.net"
@@ -28,6 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description='Demo OAuth 2.0')
 
     parser.add_argument("client_id", help='Username from Mashery')
+    parser.add_argument("client_secret", help='Secret from Mashery')
     parser.add_argument("redirect_url", help='redirect url for auth-code')
     parser.add_argument("api_key", help='API key for your app')
     args = parser.parse_args()
@@ -42,7 +50,8 @@ def main():
     if auth_code:
         # Step 3 exchange your authorization code for a long lived access token
         access_token = exchange_code_for_token(auth_code, args.api_key,
-                                               args.client_id, args.redirect_url)
+                                               args.client_id, args.client_secret,
+                                               args.redirect_url)
         if access_token:
             print 'Your long lived access token is ' + access_token
             return access_token
@@ -98,9 +107,10 @@ def handle_redirect(redirect_url):
         return None
 
 
-def exchange_code_for_token(auth_code, api_key, client_id, redirect_url):
+def exchange_code_for_token(auth_code, api_key, client_id, client_secret,
+                            redirect_url):
     data = {
-        "client_secret": api_key,
+        "client_secret": client_secret,
         "code": auth_code,
         "redirect_url": redirect_url,
         "client_id": client_id,
