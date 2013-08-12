@@ -21,7 +21,7 @@ To run simply
 
 cd ROOT_OF_PACKAGE
 pip install -r requirements.txt
-python ./guides/authorization.py CLIENT_ID, CLIENT_SECRET, REDIRECT_URL, API_KEY
+python ./guides/authorization.py CLIENT_ID CLIENT_SECRET REDIRECT_URL API_KEY
 
 '''
 
