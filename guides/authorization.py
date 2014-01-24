@@ -13,15 +13,15 @@ import requests
 '''
 OAuth 2.0 really needs to do three things.
 
-1) Make a request for the OAuth Dialog form with client secret and redirect_url
-2) After client interaction redirect_url is called with auth code or error
+1) Make a request for the OAuth Dialog form with client secret and redirect_uri
+2) After client interaction redirect_uri is called with auth code or error
 3) Finally auth code is exchanged for a long lived access token
 
 To run simply
 
 cd ROOT_OF_PACKAGE
 pip install -r requirements.txt
-python ./guides/authorization.py CLIENT_ID CLIENT_SECRET REDIRECT_URL API_KEY
+python ./guides/authorization.py CLIENT_ID CLIENT_SECRET REDIRECT_URI API_KEY
 
 '''
 
@@ -36,22 +36,22 @@ def main():
 
     parser.add_argument("client_id", help='Username from Mashery')
     parser.add_argument("client_secret", help='Secret from Mashery')
-    parser.add_argument("redirect_url", help='redirect url for auth-code')
+    parser.add_argument("redirect_uri", help='redirect uri for auth-code')
     parser.add_argument("api_key", help='API key for your app')
     args = parser.parse_args()
 
     # Step 1 Load oauth dialog and take user input
-    redirect_url = oauth_dialog(args.client_id, args.redirect_url, args.api_key)
-    if redirect_url is None:
+    redirect_uri = oauth_dialog(args.client_id, args.redirect_uri, args.api_key)
+    if redirect_uri is None:
         return None
     # Step 2 Parse authorization token from redirect response
-    auth_code = handle_redirect(redirect_url)
+    auth_code = handle_redirect(redirect_uri)
 
     if auth_code:
         # Step 3 exchange your authorization code for a long lived access token
         access_token = exchange_code_for_token(auth_code, args.api_key,
                                                args.client_id, args.client_secret,
-                                               args.redirect_url)
+                                               args.redirect_uri)
         if access_token:
             print 'Your long lived access token is ' + access_token
             return access_token
@@ -63,10 +63,10 @@ def main():
         return None
 
 
-def oauth_dialog(client_id, redirect_url, api_key):
+def oauth_dialog(client_id, redirect_uri, api_key):
     # Construct the oauth_dialog_url
     url_params = urllib.urlencode({
-        'redirect_url': redirect_url,
+        'redirect_uri': redirect_uri,
         'client_id': client_id,
         'response_type': 'code',
         'api_key': api_key
@@ -81,7 +81,7 @@ def oauth_dialog(client_id, redirect_url, api_key):
         browser.open(auth_dialog_uri)
     except:
         print 'Ran into trouble with your credentials. Are you sure your client_id, '\
-              'rediret_url, and api_key are correct?'
+              'redirect_uri, and api_key are correct?'
         return None
     # User fills in the form
     login_form = browser.forms().next()
@@ -95,9 +95,9 @@ def oauth_dialog(client_id, redirect_url, api_key):
     return response.geturl()
 
 
-def handle_redirect(redirect_url):
+def handle_redirect(redirect_uri):
     # Parse authorization code out of url
-    query_string = urlparse.urlsplit(redirect_url).query
+    query_string = urlparse.urlsplit(redirect_uri).query
     authorization_code = urlparse.parse_qs(query_string).get('code', [])
 
     # parse_qs returns a list for every query param, just get the first one
@@ -108,11 +108,11 @@ def handle_redirect(redirect_url):
 
 
 def exchange_code_for_token(auth_code, api_key, client_id, client_secret,
-                            redirect_url):
+                            redirect_uri):
     data = {
         "client_secret": client_secret,
         "code": auth_code,
-        "redirect_url": redirect_url,
+        "redirect_uri": redirect_uri,
         "client_id": client_id,
         "grant_type": "authorization_code"
     }
