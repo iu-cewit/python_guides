@@ -88,8 +88,6 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if authorization_code:
             # Step 3 - exchange your authorization code for a long lived access
             # token
-            print( api_key, client_id,
-                                                   client_secret, REDIRECT_URI)
             access_token = s.exchange_code_for_token(authorization_code,
                                                    api_key, client_id,
                                                    client_secret, REDIRECT_URI)
