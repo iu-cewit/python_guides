@@ -3,39 +3,9 @@
 import urllib
 import argparse
 import webbrowser
-import time
 import requests
 import BaseHTTPServer
-
-# Uses requests library: http://docs.python-requests.org/en/latest/
-
-'''
-OAuth 2.0 really needs to do three things.
-
-1) Make a request for the OAuth Dialog form with client secret and redirect_uri.
-2) After client has logged in / authorized the app, the redirect_uri is called
-   with auth code or error - i.e. SurveyMonkey passes back control to a URL you
-   own.
-3) Finally the page redirected to must POST to /oauth/token to exchange the auth
-   code for a long lived access token.
-
-To run:
-
-> cd ROOT_OF_PACKAGE
-> pip install -r requirements.txt
-> python ./guides/authorization.py CLIENT_ID CLIENT_SECRET API_KEY
-
-This will launch an Oauth dialog in the default browser to allow the user to log
-in to SurveyMonkey, and also launch a simple web server that will process one
-request (which will be the redirection from the OAuth dialog).
-
-When the user enters their credentials / authorizes the app, SurveyMonkey will
-redirect to your local web server, which will then exchange the code it
-receives for a long-lived access token.
-
-***NOTE WELL*** - your redirect_uri on your Mashery application MUST be
-                  http://127.0.0.1:8000 for this sample code to work.
-'''
+from urlparse import urlparse, parse_qs
 
 SM_API_BASE = "https://api.surveymonkey.net"
 AUTH_CODE_ENDPOINT = "/oauth/authorize"
@@ -48,37 +18,49 @@ api_key = None
 client_id = None
 client_secret = None
 
+
 def oauth_dialog(client_id, redirect_uri, api_key):
-    # Construct the oauth_dialog_url
+    """ Construct the oauth_dialog_url.
+    """
     url_params = urllib.urlencode({
         'redirect_uri': redirect_uri,
         'client_id': client_id,
         'response_type': 'code',
-        'api_key': api_key
-    })
-    auth_dialog_url = SM_API_BASE + AUTH_CODE_ENDPOINT + '?' + url_params
+        'api_key': api_key})
 
+    auth_dialog_url = SM_API_BASE + AUTH_CODE_ENDPOINT + '?' + url_params
     print "\nThe auth dialog url was " + auth_dialog_url + "\n"
-    webbrowser.open(auth_dialog_url,new=2)
+    webbrowser.open(auth_dialog_url, new=2)
 
 
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    """ A Basic Class to handle requests to and from SurveyMonkey.
+    """
+
     def do_HEAD(s):
+        """ Sends headers.
+        """
         s.send_response(200)
         s.send_header("Content-type", "text/html")
         s.end_headers()
+
     def print_message(s, message):
+        """ Prints a response.
+        """
         s.wfile.write("<body><p>%s</p>" % message)
+
     def do_GET(s):
+        """ Processes a response from SurveyMonkey.
+        """
         s.send_response(200)
         s.send_header("Content-type", "text/html")
         s.end_headers()
         s.wfile.write("<html><head><title>SurveyMonkey API - "
                       "OAuth Sample Redirect Page.</title></head>")
 
-        from urlparse import urlparse, parse_qs
-        # Step 2 Parse authorization token from redirect response
+        # Parse authorization token from redirect response
         authorization_code = parse_qs(urlparse(s.path).query).get('code', [])
+
         # parse_qs returns a list for every query param, just get the first one
         if len(authorization_code) > 0:
             authorization_code = authorization_code[0]
@@ -86,34 +68,36 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             authorization_code = None
 
         if authorization_code:
-            # Step 3 - exchange your authorization code for a long lived access
-            # token
+            # Exchange your authorization code for a long lived access token
             access_token = s.exchange_code_for_token(authorization_code,
-                                                   api_key, client_id,
-                                                   client_secret, REDIRECT_URI)
+                                                     api_key, client_id,
+                                                     client_secret,
+                                                     REDIRECT_URI)
             if access_token:
-                s.print_message('Your long lived access token is ' + \
+                s.print_message('Your long lived access token is ' +
                                 access_token)
             else:
                 s.print_message('Error getting authorization code')
+
         else:
             s.print_message('No Authorization Code was returned. '
                             'Were the username and password correct?')
+
         s.wfile.write("</body></html>")
 
-
-    def exchange_code_for_token(s, auth_code, api_key, client_id, client_secret,
-                                redirect_uri):
+    def exchange_code_for_token(s, auth_code, api_key,
+                                client_id, client_secret, redirect_uri):
+        """ This exhanges a short term token for a long-term token.
+        """
         data = {
             "client_secret": client_secret,
             "code": auth_code,
             "redirect_uri": redirect_uri,
             "client_id": client_id,
-            "grant_type": "authorization_code"
-        }
+            "grant_type": "authorization_code"}
 
-        access_token_uri = SM_API_BASE + ACCESS_TOKEN_ENDPOINT + '?api_key=' \
-                           + api_key
+        access_token_uri = (SM_API_BASE + ACCESS_TOKEN_ENDPOINT
+                            + '?api_key=' + api_key)
         access_token_response = requests.post(access_token_uri, data=data)
         access_json = access_token_response.json()
 
@@ -121,7 +105,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return access_json['access_token']
         else:
             s.print_message('Problems exchanging the auth code for your access'
-                            ' token. Error message: %s' \
+                            ' token. Error message: %s'
                             % access_json['error_description'])
             return None
 
@@ -138,9 +122,8 @@ if __name__ == "__main__":
     client_secret = args.client_secret
     api_key = args.api_key
 
-    # Step 1 Load oauth dialog and take user input
+    # Load oauth dialog and take user input
     oauth_dialog(args.client_id, REDIRECT_URI, api_key)
-
     server_class = BaseHTTPServer.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
     httpd.handle_request()
