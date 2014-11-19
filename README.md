@@ -8,7 +8,7 @@ The code here is neither a software development kit (SDK) nor a reference implem
 
 ## Requirements
 
-- Python 3.3 [weblink](http://www.python.org/getit/releases/3.3.0/)
+- Python 3.3 [weblink](https://www.python.org/downloads/)
 - pip [weblink](https://pypi.python.org/pypi/pip)
 - mechanize [weblink](https://pypi.python.org/pypi/mechanize/)
 - requests [weblink](https://pypi.python.org/pypi/requests)
