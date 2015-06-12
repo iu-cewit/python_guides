@@ -1,3 +1,5 @@
+# Note: CEWIT access token obtained directly through API console
+
 # SurveyMonkey OAuth 2.0 Guide
 
 ## OAuth 2.0
